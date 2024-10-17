@@ -10,7 +10,7 @@ def markdown_to_blocks(document):
 def block_to_block_type(block):
     if re.match(r"#{1,6} *",block):
         return 'heading'
-    if re.match(r"\{3}\*\{3}",block):
+    if re.match(r"```(.*?)```",block,re.DOTALL):
         return 'code'
     if re.match(r"^(?:>\s?.*(?:\n>\s?.*)*)$",block,re.MULTILINE):
         return 'quote'
@@ -24,7 +24,9 @@ def block_to_block_type(block):
 def markdown_to_html_node(markdown):
     blocks = markdown_to_blocks(markdown)
     child_nodes = []
+    print(blocks)
     for block in blocks:
+        print(block_to_block_type(block))
         match block_to_block_type(block):
             case 'heading':
                 child_nodes.append( header_block_to_html(block))
@@ -53,11 +55,12 @@ def header_block_to_html(block):
             break
         hash_count+=1
     tag = f"h{hash_count}"
-    text = block[hash_count:]
+    text = block[hash_count+1:]
     return ParentNode(tag,text_to_children(text))
 
 
 def code_block_to_html(block):
+    print(block)
     return ParentNode('code',text_to_children(block[3:-3]))
 
 
@@ -69,15 +72,15 @@ def paragraph_block_to_html(block):
 
 def unordered_list_block_to_html(block):
     list_items = re.split('\n[\*\-] ',block)
-    li_items = [HTMLNode('li',list_items[0][2:])]
-    for item in list_items:
+    li_items = [ParentNode('li',text_to_children(list_items[0][2:]))]
+    for item in list_items[1:]:
         li_items.append(ParentNode('li',text_to_children(item)))
     return ParentNode('ul',li_items)
 
 def ordered_list_block_to_html(block):
-    list_items = re.split('\n[\d+] ',block)
-    li_items = [HTMLNode('li',list_items[0][3:])]
-    for item in list_items:
+    list_items = re.split('\n[\d+]\. ',block)
+    li_items = [ParentNode('li',text_to_children(list_items[0][3:]))]
+    for item in list_items[1:]:
         li_items.append(ParentNode('li',text_to_children(item)))
     return ParentNode('ol',li_items)
 
